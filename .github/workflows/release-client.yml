@@ -1,79 +1,79 @@
- name: Release BejaClient JAR
+name: Release BejaClient JAR
 
-  on:
-    workflow_dispatch:
-      inputs:
-        version:
-          description: 'Version number (e.g. 1.2.0) — must match the JAR filename'
-          required: true
-          type: string
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.2.0) — must match the JAR filename'
+        required: true
+        type: string
 
-  jobs:
-    release:
-      runs-on: ubuntu-latest
-      permissions:
-        contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-            token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Locate bootstrap JAR
-          id: jar
-          run: |
-            VERSION="${{ inputs.version }}"
-            NAME="beja-bootstrap-${VERSION}.jar"
-            for p in "client-jars/${NAME}" "resources/beja-libs/${NAME}"; do
-              if [ -f "$p" ]; then
-                echo "path=$p"    >> "$GITHUB_OUTPUT"
-                echo "name=${NAME}" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-            done
-            echo "JAR not found. Commit beja-bootstrap-${VERSION}.jar to client-jars/ first."
-            exit 1
+      - name: Locate bootstrap JAR
+        id: jar
+        run: |
+          VERSION="${{ inputs.version }}"
+          NAME="beja-bootstrap-${VERSION}.jar"
+          for p in "client-jars/${NAME}" "resources/beja-libs/${NAME}"; do
+            if [ -f "$p" ]; then
+              echo "path=$p"    >> "$GITHUB_OUTPUT"
+              echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "JAR not found. Commit beja-bootstrap-${VERSION}.jar to client-jars/ first."
+          exit 1
 
-        - name: Compute SHA256
-          id: sha
-          run: |
-            HASH=$(sha256sum "${{ steps.jar.outputs.path }}" | cut -d' ' -f1)
-            echo "bootstrap=${HASH}" >> "$GITHUB_OUTPUT"
+      - name: Compute SHA256
+        id: sha
+        run: |
+          HASH=$(sha256sum "${{ steps.jar.outputs.path }}" | cut -d' ' -f1)
+          echo "bootstrap=${HASH}" >> "$GITHUB_OUTPUT"
 
-        - name: Create GitHub release and upload JAR
-          uses: softprops/action-gh-release@v2
-          with:
-            tag_name: client-v${{ inputs.version }}
-            name: "BejaClient Client ${{ inputs.version }}"
-            prerelease: true
-            body: |
-              **Bootstrap JAR:** `${{ steps.jar.outputs.name }}`
-              **SHA256:** `${{ steps.sha.outputs.bootstrap }}`
-            files: ${{ steps.jar.outputs.path }}
-            token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub release and upload JAR
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: client-v${{ inputs.version }}
+          name: "BejaClient Client ${{ inputs.version }}"
+          prerelease: true
+          body: |
+            **Bootstrap JAR:** `${{ steps.jar.outputs.name }}`
+            **SHA256:** `${{ steps.sha.outputs.bootstrap }}`
+          files: ${{ steps.jar.outputs.path }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Update client-version.json
-          run: |
-            VERSION="${{ inputs.version }}"
-            NAME="${{ steps.jar.outputs.name }}"
-            SHA256="${{ steps.sha.outputs.bootstrap }}"
-            URL="https://github.com/${{ github.repository }}/releases/download/client-v${VERSION}/${NAME}"
-            jq -n \
-              --arg version  "$VERSION" \
-              --arg url      "$URL" \
-              --arg filename "$NAME" \
-              --arg sha256   "$SHA256" \
-              --arg date     "$(date -u +%Y-%m-%d)" \
-              '{version:$version,url:$url,filename:$filename,sha256:$sha256,releaseDate:$date}' \
-              > client-version.json
+      - name: Update client-version.json
+        run: |
+          VERSION="${{ inputs.version }}"
+          NAME="${{ steps.jar.outputs.name }}"
+          SHA256="${{ steps.sha.outputs.bootstrap }}"
+          URL="https://github.com/${{ github.repository }}/releases/download/client-v${VERSION}/${NAME}"
+          jq -n \
+            --arg version  "$VERSION" \
+            --arg url      "$URL" \
+            --arg filename "$NAME" \
+            --arg sha256   "$SHA256" \
+            --arg date     "$(date -u +%Y-%m-%d)" \
+            '{version:$version,url:$url,filename:$filename,sha256:$sha256,releaseDate:$date}' \
+            > client-version.json
 
-        - name: Commit updated client-version.json
-          run: |
-            git config user.name  "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add client-version.json
-            git diff --cached --quiet && echo "No changes" && exit 0
-            git commit -m "chore: bump client to v${{ inputs.version }}"
-            git push
+      - name: Commit updated client-version.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add client-version.json
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "chore: bump client to v${{ inputs.version }}"
+          git push
