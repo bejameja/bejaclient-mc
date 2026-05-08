@@ -1,6 +1,7 @@
 {
-    "version": "1.0.1",
-    "url": "https://github.com/bejameja/bejaclient/releases/download/client-v1.0.1/beja-bootstrap-1.0.1.jar",
-    "filename": "beja-bootstrap-1.0.1.jar",
-    "releaseDate": "2026-05-08"
-  }
+  "version": "1.0.2",
+  "url": "https://github.com/bejameja/bejaclient-mc/releases/download/client-v1.0.2/beja-bootstrap-1.0.2.jar",
+  "filename": "beja-bootstrap-1.0.2.jar",
+  "sha256": "2055d47e538eac310ecf3b2e71daceb7a80622607b10fbeb5352ffc981829ea8",
+  "releaseDate": "2026-05-08"
+}
