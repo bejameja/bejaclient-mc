@@ -1,7 +1,7 @@
 {
-  "version": "1.0.4",
-  "url": "https://github.com/bejameja/bejaclient-mc/releases/download/client-v1.0.4/beja-bootstrap-1.0.4.jar",
-  "filename": "beja-bootstrap-1.0.4.jar",
-  "sha256": "f7c0827c18b933ae6e44a0a8fd6e6a660fcae89e45ecb69b529f489ec7b68568",
+  "version": "1.0.5",
+  "url": "https://github.com/bejameja/bejaclient-mc/releases/download/client-v1.0.5/beja-bootstrap-1.0.5.jar",
+  "filename": "beja-bootstrap-1.0.5.jar",
+  "sha256": "b8b3fc0d07d365e7bed6c7b22f98d8d00ef0206de8eb16eee44e27a09fc95b88",
   "releaseDate": "2026-05-11"
 }
