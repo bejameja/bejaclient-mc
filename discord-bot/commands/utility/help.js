@@ -5,7 +5,10 @@ const COMMANDS = {
     '`/ban <user> [reason]` — Ban a member',
     '`/kick <user> [reason]` — Kick a member',
     '`/timeout <user> <duration> [reason]` — Timeout a member',
-    '`/purge <amount>` — Bulk delete messages',
+    '`/purge <amount>` — Bulk delete messages (max 100)',
+    '`/warn <user> <reason>` — Issue a warning',
+    '`/warnings <user>` — View a user\'s warnings',
+    '`/clearwarn <user> [id]` — Remove a warning or clear all',
   ],
   '🎉 Fun': [
     '`/roll [sides] [count]` — Roll dice',
@@ -17,6 +20,8 @@ const COMMANDS = {
     '`/ping` — Check bot latency',
     '`/serverinfo` — Show server info',
     '`/userinfo [user]` — Show user info',
+    '`/remind <time> <message>` — Set a reminder (e.g. `30m`, `2h`, `1d`)',
+    '`/setprefix <prefix>` — Change the message prefix (Manage Server)',
     '`/help` — Show this menu',
   ],
 };
