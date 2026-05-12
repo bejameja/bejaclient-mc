@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number (e.g. 1.2.0) — must match the JAR filename'
+        description: 'Version number (e.g. 1.2.0) — must match the JAR filenames'
         required: true
         type: string
 
@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Locate bootstrap JAR
-        id: jar
+        id: bootstrap
         run: |
           VERSION="${{ inputs.version }}"
           NAME="beja-bootstrap-${VERSION}.jar"
@@ -33,40 +33,66 @@ jobs:
               exit 0
             fi
           done
-          echo "JAR not found. Commit beja-bootstrap-${VERSION}.jar to client-jars/ first."
+          echo "Bootstrap JAR not found. Commit beja-bootstrap-${VERSION}.jar to client-jars/ first."
           exit 1
+
+      - name: Locate adapter JAR
+        id: adapter
+        run: |
+          VERSION="${{ inputs.version }}"
+          # Accept beja-v*-VERSION.jar (e.g. beja-v1_21-1.0.5.jar)
+          JAR=$(find client-jars/ -maxdepth 1 -name "beja-v*-${VERSION}.jar" ! -name "*-sources*" ! -name "*-dev*" | head -1)
+          if [ -z "$JAR" ]; then
+            echo "Adapter JAR not found. Commit beja-v<mc>-${VERSION}.jar to client-jars/ first."
+            exit 1
+          fi
+          echo "path=$JAR"                  >> "$GITHUB_OUTPUT"
+          echo "name=$(basename $JAR)"      >> "$GITHUB_OUTPUT"
 
       - name: Compute SHA256
         id: sha
         run: |
-          HASH=$(sha256sum "${{ steps.jar.outputs.path }}" | cut -d' ' -f1)
-          echo "bootstrap=${HASH}" >> "$GITHUB_OUTPUT"
+          echo "bootstrap=$(sha256sum "${{ steps.bootstrap.outputs.path }}" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "adapter=$(sha256sum "${{ steps.adapter.outputs.path }}"    | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub release and upload JAR
+      - name: Create GitHub release and upload JARs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: client-v${{ inputs.version }}
           name: "BejaClient Client ${{ inputs.version }}"
           prerelease: true
           body: |
-            **Bootstrap JAR:** `${{ steps.jar.outputs.name }}`
-            **SHA256:** `${{ steps.sha.outputs.bootstrap }}`
-          files: ${{ steps.jar.outputs.path }}
+            **Bootstrap JAR:** `${{ steps.bootstrap.outputs.name }}` — `${{ steps.sha.outputs.bootstrap }}`
+            **Adapter JAR:**   `${{ steps.adapter.outputs.name }}`  — `${{ steps.sha.outputs.adapter }}`
+          files: |
+            ${{ steps.bootstrap.outputs.path }}
+            ${{ steps.adapter.outputs.path }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update client-version.json
         run: |
           VERSION="${{ inputs.version }}"
-          NAME="${{ steps.jar.outputs.name }}"
-          SHA256="${{ steps.sha.outputs.bootstrap }}"
-          URL="https://github.com/${{ github.repository }}/releases/download/client-v${VERSION}/${NAME}"
+          REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/client-v${VERSION}"
           jq -n \
-            --arg version  "$VERSION" \
-            --arg url      "$URL" \
-            --arg filename "$NAME" \
-            --arg sha256   "$SHA256" \
-            --arg date     "$(date -u +%Y-%m-%d)" \
-            '{version:$version,url:$url,filename:$filename,sha256:$sha256,releaseDate:$date}' \
+            --arg version         "$VERSION" \
+            --arg url             "${BASE_URL}/${{ steps.bootstrap.outputs.name }}" \
+            --arg filename        "${{ steps.bootstrap.outputs.name }}" \
+            --arg sha256          "${{ steps.sha.outputs.bootstrap }}" \
+            --arg adapterUrl      "${BASE_URL}/${{ steps.adapter.outputs.name }}" \
+            --arg adapterFilename "${{ steps.adapter.outputs.name }}" \
+            --arg adapterSha256   "${{ steps.sha.outputs.adapter }}" \
+            --arg date            "$(date -u +%Y-%m-%d)" \
+            '{
+              version:         $version,
+              url:             $url,
+              filename:        $filename,
+              sha256:          $sha256,
+              adapterUrl:      $adapterUrl,
+              adapterFilename: $adapterFilename,
+              adapterSha256:   $adapterSha256,
+              releaseDate:     $date
+            }' \
             > client-version.json
 
       - name: Commit updated client-version.json
